@@ -3,12 +3,9 @@ import {
   View,
   ScrollView,
   ImageBackground,
-  TextInput,
-  Button,
-  Image,
 } from 'react-native';
 import { Input, Button as RNEButton } from 'react-native-elements';
-import { useNavigation } from '@react-navigation/native';
+import { Link } from 'expo-router';
 
 
 const AuthScreen = () => {
@@ -16,12 +13,10 @@ const AuthScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  
-  const navigation = useNavigation();
+
   const handleLogin = () => {
     // Login logic here (e.g., authenticate with backend)
     // Giriş işlemleri için arka ucunuza veya veritabanınıza bağlantı kurun
-    navigation.navigate('HomePage')
   };
 
   const handleRegister = () => {
@@ -31,7 +26,7 @@ const AuthScreen = () => {
 
   const toggleAuthMode = () => {
     setIsLogin(!isLogin);
-  };  
+  };
 
   return (
     <ScrollView>
@@ -56,25 +51,29 @@ const AuthScreen = () => {
                   value={password}
                   style={{ backgroundColor: 'lightblue', color: 'black', fontSize: 20, borderColor: 'blue' }}
                 />
-                <RNEButton
-                  title="Giriş Yap"
-                  onPress={handleLogin}
-                  buttonStyle={{ backgroundColor: 'green' }}
-                />
-                <RNEButton
-                  title="Kayıt Ol"
-                  onPress={toggleAuthMode}
-                  buttonStyle={{ backgroundColor: '#000000', marginTop: 10 }}
-                />
+                <Link href={"./homepage"} replace={true}>
+                  <RNEButton
+                    title= "Giriş Yap"
+                    onPress={handleLogin}
+                    buttonStyle={{ backgroundColor: 'green' }}
+                  />
+                </Link>
+            
+                  <RNEButton
+                    title="Kayıt Ol"
+                    onPress={toggleAuthMode}
+                    buttonStyle={{ backgroundColor: '#000000', marginTop: 10 }}
+                  />
+               
               </>
             ) : (
               <>
-              <Input
-              placeholder="Kullanıcı Adı"
-              onChangeText={(text) => setEmail(text)}
-              value={email}
-              style={{ backgroundColor: 'lightblue', color: 'black', fontSize: 16, borderColor: 'blue' }}
-            />
+                <Input
+                  placeholder="Kullanıcı Adı"
+                  onChangeText={(text) => setEmail(text)}
+                  value={email}
+                  style={{ backgroundColor: 'lightblue', color: 'black', fontSize: 16, borderColor: 'blue' }}
+                />
                 <Input
                   placeholder="Ad Soyad"
                   onChangeText={(text) => setName(text)}
@@ -86,24 +85,23 @@ const AuthScreen = () => {
                   onChangeText={(text) => setEmail(text)}
                   value={email}
                   style={{ backgroundColor: 'lightblue', color: 'black', fontSize: 16, borderColor: 'blue', marginBottom: 10 }}
-                />
+              />
                 <Input
                   placeholder="Şifre"
-                  secureTextEntry={true}
-                  onChangeText={(text) => setPassword(text)}
-                  value={password}
-                  style={{ backgroundColor: 'lightblue', color: 'black', fontSize: 20, borderColor: 'blue' }}
-                />
+                  secureTextEntry={true} 
+                  />
                 <RNEButton
                   title="Kayıt Ol"
                   onPress={handleRegister}
                   buttonStyle={{ backgroundColor: 'green' }}
                 />
-                <RNEButton
-                  title="Giriş Yap"
-                  onPress={toggleAuthMode}
-                  buttonStyle={{ backgroundColor: '#000000', marginTop: 10 }}
-                />
+                
+                  <RNEButton
+                    title="Giriş Yap"
+                    onPress={toggleAuthMode}
+                    buttonStyle={{ backgroundColor: '#000000', marginTop: 10 }}
+                  />
+             
               </>
             )}
           </View>

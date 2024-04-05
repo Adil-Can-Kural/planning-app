@@ -1,12 +1,17 @@
 import React, { StyleSheet } from 'react';
-import { View, TouchableOpacity, Text } from 'react-native'; // Import TouchableOpacity
+import { View, TouchableOpacity, Text } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 
 const PlanButton = () => {
+  const navigation = useNavigation();
+
   return (
     <TouchableOpacity
       style={styles.planButton}
-      onPress={() => {
+        // Use expo-router for navigation, if needed
+      onPress={() => { navigation.navigate('Homepage')
         // Button click actions here
+        // Use expo-router for navigation, if needed
         // Use expo-router for navigation, if needed
       }}
     >
@@ -15,13 +20,16 @@ const PlanButton = () => {
   );
 };
 
-
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F5FCFF', // Add a background color here
+  },
   planButton: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    backgroundColor: 'transparent',
+    bottom: 20,
+    right: 20,
+    backgroundColor: 'rgba(0, 122, 255, 0.9)',
     borderRadius: 50,
     padding: 10,
     justifyContent: 'center',
@@ -34,7 +42,7 @@ const styles = StyleSheet.create({
   },
 });
 
-const App = () => {
+ export const App = () => {
   // ...
 
   return (
@@ -44,4 +52,5 @@ const App = () => {
     </View>
   );
 };
-export default HomePage;
+
+export default homepage;
