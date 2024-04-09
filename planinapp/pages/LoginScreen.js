@@ -6,22 +6,47 @@ import {
 } from 'react-native';
 import { Input, Button as RNEButton } from 'react-native-elements';
 import { Link } from 'expo-router';
+import firebase from '../firebaseConfig.js'; // Import your firebaseConfig.js
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 
+const auth = getAuth(firebase);
 
-const AuthScreen = () => {
+const AuthScreen = ({ navigation }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
 
   const handleLogin = () => {
-    // Login logic here (e.g., authenticate with backend)
-    // Giriş işlemleri için arka ucunuza veya veritabanınıza bağlantı kurun
+    signInWithEmailAndPassword(auth, email, password)
+    .then((userCredential) => {
+      // Signed in
+      const user = userCredential.user;
+      console.log('User logged in:', user);
+    
+    })
+    .catch((error) => {
+      const errorCode = error.code;
+      const errorMessage = error.message;
+      console.log('Error logging in:', errorCode, errorMessage);
+    
+    });
   };
 
   const handleRegister = () => {
-    // Registration logic here (e.g., send data to Firebase)
-    // Kayıt işlemleri için arka ucunuza veya veritabanınıza bağlantı kurun
+    createUserWithEmailAndPassword(auth, email, password,name)
+    .then((userCredential) => {
+      // Signed up
+      const user = userCredential.user;
+      console.log('User registered:', user);
+      // ...
+    })
+    .catch((error) => {
+      const errorCode = error.code;
+      const errorMessage = error.message;
+      console.log('Error registering:', errorCode, errorMessage);
+      // ...
+    });
   };
 
   const toggleAuthMode = () => {
@@ -39,7 +64,7 @@ const AuthScreen = () => {
             {isLogin ? (
               <>
                 <Input
-                  placeholder="Kullanıcı Adı"
+                  placeholder="E-mail"
                   onChangeText={(text) => setEmail(text)}
                   value={email}
                   style={{ backgroundColor: 'lightblue', color: 'black', fontSize: 16, borderColor: 'blue' }}
@@ -69,7 +94,7 @@ const AuthScreen = () => {
             ) : (
               <>
                 <Input
-                  placeholder="Kullanıcı Adı"
+                  placeholder="E-mail"
                   onChangeText={(text) => setEmail(text)}
                   value={email}
                   style={{ backgroundColor: 'lightblue', color: 'black', fontSize: 16, borderColor: 'blue' }}
@@ -81,15 +106,13 @@ const AuthScreen = () => {
                   style={{ backgroundColor: 'lightblue', color: 'black', fontSize: 16, borderColor: 'blue' }}
                 />
                 <Input
-                  placeholder="E-posta"
-                  onChangeText={(text) => setEmail(text)}
-                  value={email}
-                  style={{ backgroundColor: 'lightblue', color: 'black', fontSize: 16, borderColor: 'blue', marginBottom: 10 }}
-              />
-                <Input
                   placeholder="Şifre"
-                  secureTextEntry={true} 
-                  />
+                  secureTextEntry={true}
+                  onChangeText={(text) => setPassword(text)}
+                  value={password}
+                  style={{ backgroundColor: 'lightblue', color: 'black', fontSize: 20, borderColor: 'blue' }}
+                />
+               
                 <RNEButton
                   title="Kayıt Ol"
                   onPress={handleRegister}

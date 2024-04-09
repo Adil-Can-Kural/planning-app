@@ -1,15 +1,15 @@
 import React, { StyleSheet } from 'react';
 import { View, TouchableOpacity, Text } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+
 
 const PlanButton = () => {
-  const navigation = useNavigation();
+
 
   return (
     <TouchableOpacity
       style={styles.planButton}
         // Use expo-router for navigation, if needed
-      onPress={() => { navigation.navigate('Homepage')
+      onPress={() => { 
         // Button click actions here
         // Use expo-router for navigation, if needed
         // Use expo-router for navigation, if needed

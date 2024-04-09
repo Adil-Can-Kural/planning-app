@@ -1,7 +1,7 @@
 import React from 'react';
 import { SafeAreaView, StyleSheet } from 'react-native';
-import HomeScreen from './pages/homepage.js';
-
+import LoginScreen from './pages/LoginScreen.js';
+import { NavigationContainer } from '@react-navigation/native';
 
 
 
@@ -16,9 +16,13 @@ const styles = StyleSheet.create({
 
 function App() {
   return (
-    <SafeAreaView>
-      <HomeScreen/>
-    </SafeAreaView>
+    <NavigationContainer>
+      <SafeAreaView style={styles.container}> 
+      <LoginScreen />
+      
+      </SafeAreaView>
+      
+      </NavigationContainer>
   );
 }
 
