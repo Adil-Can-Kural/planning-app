@@ -7,9 +7,11 @@ import {
 import { Input, Button as RNEButton } from 'react-native-elements';
 import { Link } from 'expo-router';
 import firebase from '../firebaseConfig.js'; // Import your firebaseConfig.js
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
 
 const auth = getAuth(firebase);
+const MIN_PASSWORD_LENGTH = 6;
+const MAX_PASSWORD_LENGTH = 16;
 
 const AuthScreen = ({ navigation }) => {
   const [isLogin, setIsLogin] = useState(true);
@@ -17,12 +19,21 @@ const AuthScreen = ({ navigation }) => {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
 
+  
   const handleLogin = () => {
+    if (email === '' || password === '' || name === '') {
+      alert('Tüm alanları doldurmanız gerekmektedir.');
+      return; // Exit the function if any field is empty
+    }
+    if (password.length < 6 || password.length > 16) {
+      alert('Password must be between 6 and 16 characters long.');
+      return; }
+      
     signInWithEmailAndPassword(auth, email, password)
     .then((userCredential) => {
       // Signed in
-      const user = userCredential.user;
-      console.log('User logged in:', user);
+      const user = userCredential.currentUser;
+      alert('Hoşgeldiniz');
     
     })
     .catch((error) => {
@@ -34,19 +45,38 @@ const AuthScreen = ({ navigation }) => {
   };
 
   const handleRegister = () => {
-    createUserWithEmailAndPassword(auth, email, password,name)
-    .then((userCredential) => {
-      // Signed up
-      const user = userCredential.user;
-      console.log('User registered:', user);
-      // ...
-    })
-    .catch((error) => {
-      const errorCode = error.code;
-      const errorMessage = error.message;
-      console.log('Error registering:', errorCode, errorMessage);
-      // ...
-    });
+    if (email === '' || password === '' || name === '') {
+      alert('Tüm alanları doldurmanız gerekmektedir.');
+      return; // Exit the function if any field is empty
+    }
+    if (password.length < 6 || password.length > 16) {
+      alert('Password must be between 6 and 16 characters long.');
+      return;
+    }
+  
+    createUserWithEmailAndPassword(auth, email, password)
+      .then((userCredential) => {
+        // Kullanıcı kaydedildi
+        alert('User registered:', userCredential.user);
+  
+        // Send email verification
+        sendEmailVerification(auth.currentUser)
+          .then(() => {
+            console.log('Email verification sent.');
+            // Show a success message to the user
+            alert('Email verification sent. Please check your email to verify your account.');
+          
+          })
+          .catch((error) => {
+            console.error('Error sending email verification:', error);
+            // Show an error message to the user
+            alert('Error sending email verification. Please try again.');
+          });
+      })
+      .catch((error) => {
+        console.error('Error registering user:', error);
+        alert('Error registering user. Please try again.');
+      });
   };
 
   const toggleAuthMode = () => {
