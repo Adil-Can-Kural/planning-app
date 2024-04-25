@@ -2,7 +2,7 @@ import React from 'react';
 import { SafeAreaView, StyleSheet } from 'react-native';
 import LoginScreen from './pages/LoginScreen.js';
 import { NavigationContainer } from '@react-navigation/native';
-
+import  Schedule from './pages/plan.js'
 
 
 
@@ -18,7 +18,7 @@ function App() {
   return (
     <NavigationContainer>
       <SafeAreaView style={styles.container}> 
-      <LoginScreen />
+      <Schedule />
       
       </SafeAreaView>
       
