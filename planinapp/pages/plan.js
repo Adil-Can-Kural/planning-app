@@ -175,13 +175,14 @@ const Schedule = () => {
           </View>
         </View>
       </Modal>
-
+      <ImageBackground source={require('../container/anasayfa.jpeg')} style={{ flex: 1, opacity: 0.5,zIndex : -1}}>
       <Agenda
+      
         items={items}
         loadItemsForMonth={loadItemsForMonth}
         selected={selectedDate? selectedDate.toISOString().split('T')[0] : null}
         renderItem={(item) => 
-          <ImageBackground source={require('../container/anasayfa.jpeg')} style={{ flex: 1, opacity: 0.5}}>
+          
             <TouchableOpacity style={{ marginRight: 10, marginTop: 17 }}>
               <Card>
                 <Card.Content>
@@ -198,17 +199,51 @@ const Schedule = () => {
                 </Card.Content>
               </Card>
             </TouchableOpacity>
-          </ImageBackground>
+          
         }
         onDayPress={(day) => setSelectedDate(day.date)}
         renderEmptyData={() => 
-          <ImageBackground source={require('../container/anasayfa.jpeg')} style={{ flex: 1, justifyContent: 'center', alignItems: 'center', opacity : 0.7 }}>
-            <Text style={{ fontSize: 25, color: '#000000', fontStyle: 'italic', opacity :1,fontWeight:'bold'}}>Bugün planınız yok :(</Text>
-          </ImageBackground>
+          <View
+          style={{
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            opacity: 0.7,
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 25,
+              color: '#000000',
+              fontStyle: 'italic',
+              opacity: 1,
+              fontWeight: 'bold',
+            }}
+          >
+            Bugün planınız yok :(
+          </Text>
+        </View>
         }
         locale={'tr'}
+        style={{ zIndex: 1 }}
       />
-      <Button title="PLAN EKLE" onPress={() => setModalVisible(true)} />
+      </ImageBackground>
+      <Button
+  style={{
+    backgroundColor: '#C69966', // Light brown background color
+    borderRadius: 10,
+    padding: 10,
+    paddingHorizontal: 20,
+    opacity: 0.8,
+  }}
+  titleStyle={{
+    color: '#ffffff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  }}
+  title="PLAN EKLE"
+  onPress={() => setModalVisible(true)}
+/>
     </View>
   );
 };
@@ -246,7 +281,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 10,
     paddingLeft: 10,
-    width: '100%',
+    width: '100%',  
   },
 });
 
