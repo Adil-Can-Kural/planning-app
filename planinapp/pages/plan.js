@@ -1,16 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect,useRef } from 'react';
 import { View, TouchableOpacity, Text, TextInput, Button, ImageBackground, Modal, StyleSheet, Platform } from 'react-native';
 import { Agenda } from 'react-native-calendars';
 import { Card, Avatar } from 'react-native-paper';
-
+import { collection, addDoc,getDocs } from "firebase/firestore";
+import { db } from '../firebaseConfig.js';
 const timeToString = (time) => {
   const date = new Date(time);
   return date.toISOString().split('T')[0];
 };
 
 const Schedule = () => {
-  const [items, setItems] = useState({});
-  const [newPlan, setNewPlan] = useState('');
+  const [items, setItems] = useState({}); // State to hold plans
+  const [newPlan, setNewPlan] = useState(''); // State for new plan input
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [noPlanMessage, setNoPlanMessage] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
@@ -51,29 +52,48 @@ const Schedule = () => {
     }
   };
 
-  const addItem = (date) => {
-    if (newPlan !== '' && startTime !== '' && endTime !== '' && !timeError && !timeConflict) {
-      if (!items[date]) {
-        items[date] = [];
-      }
-      items[date].push({
+  const addItem = async (date) => {
+    if (
+      newPlan !== '' &&
+      startTime !== '' &&
+      endTime !== '' &&
+      !timeError &&
+      !timeConflict
+    ) {
+      const planData = {
         name: newPlan,
         startTime: startTime,
         endTime: endTime,
         description: planDescription,
-        height: 50,
-      });
-      setItems(items);
-      setNewPlan('');
-      setStartTime('');
-      setEndTime('');
-      setPlanDescription('');
-      setTimeError('');
-      setTimeConflict('');
+      };
+
+      try {
+        // Add document to Firestore collection
+        const docRef = await addDoc(collection(db, 'Plans'), planData);
+        console.log('Document written with ID:', docRef.id);
+
+        if (!items[date]) {
+          items[date] = [];
+        }
+        items[date].push({
+          ...planData,
+          height: 50, // Adjust height as needed
+        });
+        setItems(items);
+
+        setNewPlan('');
+        setStartTime('');
+        setEndTime('');
+        setPlanDescription('');
+        setTimeError('');
+        setTimeConflict('');
+      } catch (error) {
+        console.error('Error adding document:', error);
+      }
     }
   };
-
   useEffect(() => {
+    
     const validateTime = (time) => {
       const regex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
       return regex.test(time);

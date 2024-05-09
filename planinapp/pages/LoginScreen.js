@@ -19,64 +19,41 @@ const AuthScreen = ({ navigation }) => {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
 
-  
-  const handleLogin = () => {
-    if (email === '' || password === '' || name === '') {
-      alert('Tüm alanları doldurmanız gerekmektedir.');
-      return; // Exit the function if any field is empty
+  const handleLogin = async () => {
+    if (!email ||!password) {
+      alert('Please fill in all fields.');
+      return;
     }
-    if (password.length < 6 || password.length > 16) {
-      alert('Password must be between 6 and 16 characters long.');
-      return; }
-      
-    signInWithEmailAndPassword(auth, email, password)
-    .then((userCredential) => {
-      // Signed in
-      const user = userCredential.currentUser;
-      alert('Hoşgeldiniz');
-    
-    })
-    .catch((error) => {
-      const errorCode = error.code;
-      const errorMessage = error.message;
-      console.log('Error logging in:', errorCode, errorMessage);
-    
-    });
-  };
-
-  const handleRegister = () => {
-    if (email === '' || password === '' || name === '') {
-      alert('Tüm alanları doldurmanız gerekmektedir.');
-      return; // Exit the function if any field is empty
-    }
-    if (password.length < 6 || password.length > 16) {
+    if (password.length < MIN_PASSWORD_LENGTH || password.length > MAX_PASSWORD_LENGTH) {
       alert('Password must be between 6 and 16 characters long.');
       return;
     }
-  
-    createUserWithEmailAndPassword(auth, email, password)
-      .then((userCredential) => {
-        // Kullanıcı kaydedildi
-        alert('User registered:', userCredential.user);
-  
-        // Send email verification
-        sendEmailVerification(auth.currentUser)
-          .then(() => {
-            console.log('Email verification sent.');
-            // Show a success message to the user
-            alert('Email verification sent. Please check your email to verify your account.');
-          
-          })
-          .catch((error) => {
-            console.error('Error sending email verification:', error);
-            // Show an error message to the user
-            alert('Error sending email verification. Please try again.');
-          });
-      })
-      .catch((error) => {
-        console.error('Error registering user:', error);
-        alert('Error registering user. Please try again.');
-      });
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      navigation.navigate('Homepage'); // Navigate to Homepage on successful login
+    } catch (error) {
+      console.error('Error logging in:', error);
+      alert('Error logging in. Please try again.');
+    }
+  };
+
+  const handleRegister = async () => {
+    if (!email ||!password ||!name) {
+      alert('Please fill in all fields.');
+      return;
+    }
+    if (password.length < MIN_PASSWORD_LENGTH || password.length > MAX_PASSWORD_LENGTH) {
+      alert('Password must be between 6 and 16 characters long.');
+      return;
+    }
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      await sendEmailVerification(auth.currentUser);
+      alert('User registered successfully. Please check your email to verify your account.');
+    } catch (error) {
+      console.error('Error registering user:', error);
+      alert('Error registering user. Please try again.');
+    }
   };
 
   const toggleAuthMode = () => {
@@ -91,7 +68,7 @@ const AuthScreen = ({ navigation }) => {
           style={{ flex: 1, resizeMode: 'cover' }}
         >
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 500 }}>
-            {isLogin ? (
+            {isLogin? (
               <>
                 <Input
                   placeholder="E-mail"
@@ -106,20 +83,16 @@ const AuthScreen = ({ navigation }) => {
                   value={password}
                   style={{ backgroundColor: 'lightblue', color: 'black', fontSize: 20, borderColor: 'blue' }}
                 />
-                <Link href={"./homepage"} replace={true}>
-                  <RNEButton
-                    title= "Giriş Yap"
-                    onPress={handleLogin}
-                    buttonStyle={{ backgroundColor: 'green' }}
-                  />
-                </Link>
-            
-                  <RNEButton
-                    title="Kayıt Ol"
-                    onPress={toggleAuthMode}
-                    buttonStyle={{ backgroundColor: '#000000', marginTop: 10 }}
-                  />
-               
+                <RNEButton
+                  title="Giriş Yap"
+                  onPress={handleLogin}
+                  buttonStyle={{ backgroundColor: 'green' }}
+                />
+                <RNEButton
+                  title="Kayıt Ol"
+                  onPress={toggleAuthMode}
+                  buttonStyle={{ backgroundColor: '#000000', marginTop: 10 }}
+                />
               </>
             ) : (
               <>
@@ -142,19 +115,16 @@ const AuthScreen = ({ navigation }) => {
                   value={password}
                   style={{ backgroundColor: 'lightblue', color: 'black', fontSize: 20, borderColor: 'blue' }}
                 />
-               
                 <RNEButton
                   title="Kayıt Ol"
                   onPress={handleRegister}
                   buttonStyle={{ backgroundColor: 'green' }}
                 />
-                
-                  <RNEButton
-                    title="Giriş Yap"
-                    onPress={toggleAuthMode}
-                    buttonStyle={{ backgroundColor: '#000000', marginTop: 10 }}
-                  />
-             
+                <RNEButton
+                  title="Giriş Yap"
+                  onPress={toggleAuthMode}
+                  buttonStyle={{ backgroundColor: '#000000', marginTop: 10 }}
+                />
               </>
             )}
           </View>
