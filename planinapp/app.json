@@ -14,7 +14,7 @@
     "assetBundlePatterns": [
       "**/*"
     ],
-    "scheme": "PlaningApp",
+    "scheme": ["planingapp"],
     "ios": {
       "supportsTablet": true
     },
@@ -28,8 +28,6 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": [
-      "expo-router"
-    ]
+    "plugins": []
   }
 }

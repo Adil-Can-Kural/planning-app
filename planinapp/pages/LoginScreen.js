@@ -5,7 +5,6 @@ import {
   ImageBackground,
 } from 'react-native';
 import { Input, Button as RNEButton } from 'react-native-elements';
-import { Link } from 'expo-router';
 import firebase from '../firebaseConfig.js'; // Import your firebaseConfig.js
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
 
@@ -30,7 +29,7 @@ const AuthScreen = ({ navigation }) => {
     }
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      navigation.navigate('Homepage'); // Navigate to Homepage on successful login
+      navigation.navigate('Plan'); // Navigate to Plan on successful login
     } catch (error) {
       console.error('Error logging in:', error);
       alert('Error logging in. Please try again.');
@@ -68,7 +67,7 @@ const AuthScreen = ({ navigation }) => {
           style={{ flex: 1, resizeMode: 'cover' }}
         >
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 500 }}>
-            {isLogin? (
+            {isLogin ? (
               <>
                 <Input
                   placeholder="E-mail"

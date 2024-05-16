@@ -1,29 +1,21 @@
 import React from 'react';
-import { SafeAreaView, StyleSheet } from 'react-native';
-import LoginScreen from './pages/LoginScreen.js';
 import { NavigationContainer } from '@react-navigation/native';
-import  Schedule from './pages/plan.js'
+import { createStackNavigator } from '@react-navigation/stack';
+import { enableScreens } from 'react-native-screens';
+import LoginScreen from './pages/LoginScreen';
+import PlanScreen from './pages/plan';
 
+enableScreens();
 
+const Stack = createStackNavigator();
 
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-  },  
-});
-
-function App() {
+export default function App() {
   return (
     <NavigationContainer>
-      <SafeAreaView style={styles.container}> 
-      <Schedule />
-      
-      </SafeAreaView>
-      
-      </NavigationContainer>
+      <Stack.Navigator initialRouteName="Login">
+        <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="Plan" component={PlanScreen} />
+      </Stack.Navigator>
+    </NavigationContainer>
   );
 }
-
-export default App;
