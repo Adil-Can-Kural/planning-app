@@ -1,9 +1,10 @@
-import React, { useState, useEffect,useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, TouchableOpacity, Text, TextInput, Button, ImageBackground, Modal, StyleSheet, Platform } from 'react-native';
 import { Agenda } from 'react-native-calendars';
-import { Card, Avatar } from 'react-native-paper';
-import { collection, addDoc,getDocs } from "firebase/firestore";
+import { Card } from 'react-native-paper';
+import { collection, addDoc, getDocs } from "firebase/firestore";
 import { db } from '../firebaseConfig.js';
+
 const timeToString = (time) => {
   const date = new Date(time);
   return date.toISOString().split('T')[0];
@@ -20,6 +21,34 @@ const Schedule = () => {
   const [planDescription, setPlanDescription] = useState('');
   const [timeError, setTimeError] = useState('');
   const [timeConflict, setTimeConflict] = useState('');
+
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, "Plans"));
+        const plans = {};
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          const strTime = timeToString(new Date());
+          if (!plans[strTime]) {
+            plans[strTime] = [];
+          }
+          plans[strTime].push({
+            name: data.name,
+            startTime: data.startTime,
+            endTime: data.endTime,
+            description: data.description,
+            height: 50, // Adjust height as needed
+          });
+        });
+        setItems(plans);
+      } catch (error) {
+        console.error("Error fetching plans:", error);
+      }
+    };
+
+    fetchPlans();
+  }, []);
 
   const loadItemsForMonth = (month) => {
     if (items && Object.keys(items).length > 0) {
@@ -92,8 +121,8 @@ const Schedule = () => {
       }
     }
   };
+
   useEffect(() => {
-    
     const validateTime = (time) => {
       const regex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
       return regex.test(time);
@@ -195,14 +224,12 @@ const Schedule = () => {
           </View>
         </View>
       </Modal>
-      <ImageBackground source={require('../container/anasayfa.jpeg')} style={{ flex: 1, opacity: 0.5,zIndex : -1}}>
-      <Agenda
-      
-        items={items}
-        loadItemsForMonth={loadItemsForMonth}
-        selected={selectedDate? selectedDate.toISOString().split('T')[0] : null}
-        renderItem={(item) => 
-          
+      <ImageBackground source={require('../container/anasayfa.jpeg')} style={{ flex: 1, opacity: 0.5, zIndex: -1 }}>
+        <Agenda
+          items={items}
+          loadItemsForMonth={loadItemsForMonth}
+          selected={selectedDate ? selectedDate.toISOString().split('T')[0] : null}
+          renderItem={(item) =>
             <TouchableOpacity style={{ marginRight: 10, marginTop: 17 }}>
               <Card>
                 <Card.Content>
@@ -219,89 +246,66 @@ const Schedule = () => {
                 </Card.Content>
               </Card>
             </TouchableOpacity>
-          
-        }
-        onDayPress={(day) => setSelectedDate(day.date)}
-        renderEmptyData={() => 
-          <View
-          style={{
-            flex: 1,
-            justifyContent: 'center',
-            alignItems: 'center',
-            opacity: 0.7,
-          }}
-        >
-          <Text
-            style={{
-              fontSize: 25,
-              color: '#000000',
-              fontStyle: 'italic',
-              opacity: 1,
-              fontWeight: 'bold',
-            }}
-          >
-            Bugün planınız yok :(
-          </Text>
-        </View>
-        }
-        locale={'tr'}
-        style={{ zIndex: 1 }}
-      />
+          }
+          onDayPress={(day) => setSelectedDate(day.dateString)}
+          renderEmptyDate={() => <View />}
+          showClosingKnob={true}
+        />
       </ImageBackground>
-      <Button
-  style={{
-    backgroundColor: '#C69966', // Light brown background color
-    borderRadius: 10,
-    padding: 10,
-    paddingHorizontal: 20,
-    opacity: 0.8,
-  }}
-  titleStyle={{
-    color: '#ffffff',
-    fontSize: 18,
-    fontWeight: 'bold',
-  }}
-  title="PLAN EKLE"
-  onPress={() => setModalVisible(true)}
-/>
+      {noPlanMessage && (
+        <View style={styles.noPlanMessageContainer}>
+          <Text style={styles.noPlanMessage}>Seçtiğiniz tarihte bir planınız yok.</Text>
+          <Button
+            title="Plan Ekle"
+            onPress={() => setModalVisible(true)}
+          />
+        </View>
+      )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  modal: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   modalBackground: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContainer: {
-    backgroundColor: 'white',
-    padding: 20,
-    borderRadius: 10,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.8,
-    shadowRadius: 2,
-    elevation: 1,
     width: '80%',
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 20,
+    elevation: 10,
   },
   modalContent: {
-    width: '100%',
+    marginBottom: 15,
   },
   input: {
     height: 40,
     borderColor: 'gray',
     borderWidth: 1,
-    marginTop: 10,
     marginBottom: 10,
     paddingLeft: 10,
-    width: '100%',  
+  },
+  noPlanMessageContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    padding: 20,
+  },
+  noPlanMessage: {
+    color: 'white',
+    fontSize: 16,
+    marginBottom: 10,
+  },
+  modal: {
+    margin: 0,
+    justifyContent: 'center',
   },
 });
 

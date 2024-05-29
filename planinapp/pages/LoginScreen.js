@@ -3,6 +3,7 @@ import {
   View,
   ScrollView,
   ImageBackground,
+  Text,
 } from 'react-native';
 import { Input, Button as RNEButton } from 'react-native-elements';
 import firebase from '../firebaseConfig.js'; // Import your firebaseConfig.js
@@ -17,9 +18,10 @@ const AuthScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [successMessage, setSuccessMessage] = useState(''); // State for success message
 
   const handleLogin = async () => {
-    if (!email ||!password) {
+    if (!email || !password) {
       alert('Please fill in all fields.');
       return;
     }
@@ -29,6 +31,7 @@ const AuthScreen = ({ navigation }) => {
     }
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      alert('Başarılı Bir Şekilde giriş yaptınız'); // Set success message
       navigation.navigate('Plan'); // Navigate to Plan on successful login
     } catch (error) {
       console.error('Error logging in:', error);
@@ -37,7 +40,7 @@ const AuthScreen = ({ navigation }) => {
   };
 
   const handleRegister = async () => {
-    if (!email ||!password ||!name) {
+    if (!email || !password || !name) {
       alert('Please fill in all fields.');
       return;
     }
@@ -63,10 +66,13 @@ const AuthScreen = ({ navigation }) => {
     <ScrollView>
       <View style={{ flex: 1 }}>
         <ImageBackground
-          source={require('../container/login.jpeg')} 
+          source={require('../container/login.jpeg')}
           style={{ flex: 1, resizeMode: 'cover' }}
         >
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 500 }}>
+            {successMessage ? (
+              <Text style={{ color: 'green', fontSize: 20, marginBottom: 20 }}>{successMessage}</Text>
+            ) : null}
             {isLogin ? (
               <>
                 <Input
