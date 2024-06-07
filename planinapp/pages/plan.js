@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, TouchableOpacity, Text, TextInput, Button, ImageBackground, Modal, StyleSheet, Platform } from 'react-native';
+import { View, TouchableOpacity, Text, TextInput, Button, ImageBackground, Modal, StyleSheet, TouchableWithoutFeedback } from 'react-native';
 import { Agenda } from 'react-native-calendars';
 import { Card } from 'react-native-paper';
-import { collection, addDoc, getDocs } from "firebase/firestore";
-import { db } from '../firebaseConfig.js';
+import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, Timestamp } from "firebase/firestore";
+import { db, auth } from '../firebaseConfig.js';
+import { Ionicons } from '@expo/vector-icons';
+import { signOut, deleteUser } from "firebase/auth";
 
 const timeToString = (time) => {
   const date = new Date(time);
@@ -11,74 +13,59 @@ const timeToString = (time) => {
 };
 
 const Schedule = () => {
-  const [items, setItems] = useState({}); // State to hold plans
-  const [newPlan, setNewPlan] = useState(''); // State for new plan input
+  const [items, setItems] = useState({});
+  const [newPlan, setNewPlan] = useState('');
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [noPlanMessage, setNoPlanMessage] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [planDescription, setPlanDescription] = useState('');
   const [timeError, setTimeError] = useState('');
   const [timeConflict, setTimeConflict] = useState('');
+  const [settingsVisible, setSettingsVisible] = useState(false);
+  const [backgroundImage, setBackgroundImage] = useState(require('../container/anasayfa.jpeg'));
+  const [selectedPlan, setSelectedPlan] = useState(null);
+  const [planModalVisible, setPlanModalVisible] = useState(false);
 
-  useEffect(() => {
-    const fetchPlans = async () => {
-      try {
-        const querySnapshot = await getDocs(collection(db, "Plans"));
-        const plans = {};
-        querySnapshot.forEach((doc) => {
-          const data = doc.data();
-          const strTime = timeToString(new Date());
+  const fetchPlans = async () => {
+    try {
+      const querySnapshot = await getDocs(collection(db, "Plans"));
+      const plans = {};
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        if (data.date) {
+          const strTime = timeToString(data.date.toDate());
           if (!plans[strTime]) {
             plans[strTime] = [];
           }
           plans[strTime].push({
+            id: doc.id,
             name: data.name,
             startTime: data.startTime,
             endTime: data.endTime,
             description: data.description,
-            height: 50, // Adjust height as needed
+            height: 50,
           });
-        });
-        setItems(plans);
-      } catch (error) {
-        console.error("Error fetching plans:", error);
-      }
-    };
+        } else {
+          console.error("Document is missing 'date' field:", doc.id);
+        }
+      });
+      setItems(plans);
+    } catch (error) {
+      console.error("Error fetching plans:", error);
+    }
+  };
 
+  useEffect(() => {
     fetchPlans();
   }, []);
 
   const loadItemsForMonth = (month) => {
-    if (items && Object.keys(items).length > 0) {
-      loadItems(month);
-    } else {
-      setItems({});
-    }
-  };
-
-  const loadItems = (date) => {
-    const day = new Date(date);
-    const currentDate = new Date();
-    if (day.getTime() >= currentDate.getTime()) {
-      for (let i = 0; i < 30; i++) {
-        const time = day.getTime() + i * 24 * 60 * 60 * 1000;
-        const strTime = timeToString(time);
-        if (!items[strTime]) {
-          items[strTime] = [];
-        }
-      }
-      setItems(items);
-
-      if (items[date] && items[date].length === 0) {
-        setNoPlanMessage(true);
-      } else {
-        setNoPlanMessage(false);
-      }
-    } else {
-      setItems({});
-    }
+    setTimeout(() => {
+      const newItems = {};
+      Object.keys(items).forEach(key => { newItems[key] = items[key]; });
+      setItems(newItems);
+    }, 1000);
   };
 
   const addItem = async (date) => {
@@ -94,10 +81,10 @@ const Schedule = () => {
         startTime: startTime,
         endTime: endTime,
         description: planDescription,
+        date: Timestamp.fromDate(selectedDate)
       };
 
       try {
-        // Add document to Firestore collection
         const docRef = await addDoc(collection(db, 'Plans'), planData);
         console.log('Document written with ID:', docRef.id);
 
@@ -106,9 +93,10 @@ const Schedule = () => {
         }
         items[date].push({
           ...planData,
-          height: 50, // Adjust height as needed
+          id: docRef.id,
+          height: 50,
         });
-        setItems(items);
+        setItems({ ...items });
 
         setNewPlan('');
         setStartTime('');
@@ -124,24 +112,24 @@ const Schedule = () => {
 
   useEffect(() => {
     const validateTime = (time) => {
-      const regex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+      const regex = /^([0-1]?[0-9]|2[0-3])[:.]([0-5][0-9])$/;
       return regex.test(time);
     };
 
     if (startTime !== '' && !validateTime(startTime)) {
-      setTimeError('Lütfen geçerli bir saat girin.');
+      setTimeError('Lütfen geçerli bir saat girin. (SS:DD veya SS.DD');
     } else {
       setTimeError('');
     }
 
     if (endTime !== '' && !validateTime(endTime)) {
-      setTimeError('Lütfen geçerli bir saat girin.');
+      setTimeError('Lütfen geçerli bir saat girin. (SS:DD veya SS.DD)');
     } else {
       setTimeError('');
     }
 
-    if (startTime !== '' && endTime !== '' && startTime >= endTime) {
-      setTimeConflict('Başlangıç saati, bitiş saatinden sonra olmamalıdır.');
+    if (startTime !== '' && endTime !== '' && startTime.replace('.', ':') >= endTime.replace('.', ':')) {
+      setTimeConflict('Başlangıç saati, bitiş saatinden sonra veya eşit olmamalıdır.');
     } else {
       setTimeConflict('');
     }
@@ -150,9 +138,9 @@ const Schedule = () => {
       const currentDateItems = items[timeToString(selectedDate)];
       if (currentDateItems) {
         for (const item of currentDateItems) {
-          const start = new Date(`${timeToString(selectedDate)}T${item.startTime}:00Z`);
-          const end = new Date(`${timeToString(selectedDate)}T${item.endTime}:00Z`);
-         if ((start <= new Date(startTime) && end >= new Date(startTime)) || (start <= new Date(endTime) && end >= new Date(endTime))) {
+          const start = new Date(`${timeToString(selectedDate)}T${item.startTime.replace('.', ':')}:00`);
+          const end = new Date(`${timeToString(selectedDate)}T${item.endTime.replace('.', ':')}:00`);
+          if ((new Date(`${timeToString(selectedDate)}T${startTime.replace('.', ':')}:00`) < end && new Date(`${timeToString(selectedDate)}T${endTime.replace('.', ':')}:00`) > start)) {
             setTimeConflict('Aynı anda iki plan olmaz.');
             return true;
           }
@@ -161,12 +149,69 @@ const Schedule = () => {
       return false;
     };
 
-    if (startTime !== '' && endTime !== '' && checkTimeConflicts()) {
+    if (startTime !== '' && endTime !== '' && !timeConflict && checkTimeConflicts()) {
       setTimeConflict('Aynı anda iki plan olmaz.');
-    } else {
+    } else if (timeConflict !== 'Aynı anda iki plan olmaz.') {
       setTimeConflict('');
     }
   }, [startTime, endTime]);
+
+  const handleLogout = () => {
+    signOut(auth)
+      .then(() => {
+        console.log('User signed out!');
+      })
+      .catch((error) => {
+        console.error('Error signing out:', error);
+      });
+  };
+  
+  const handleDeleteAccount = () => {
+    if (auth.currentUser) {
+      deleteUser(auth.currentUser)
+        .then(() => {
+          console.log('User account deleted!');
+        })
+        .catch((error) => {
+          console.error('Error deleting account:', error);
+        });
+    } else {
+      console.error('No user is currently signed in.');
+    }
+  };
+  
+
+  const handleChangeBackground = () => {
+    console.log('Change background function called');
+  };
+
+  const handleDeletePlan = async (planId, date) => {
+    try {
+      await deleteDoc(doc(db, 'Plans', planId));
+      const updatedItems = { ...items };
+      updatedItems[date] = updatedItems[date].filter(item => item.id !== planId);
+      setItems(updatedItems);
+      setPlanModalVisible(false);
+    } catch (error) {
+      console.error('Error deleting plan:', error);
+    }
+  };
+
+  const handleUpdatePlan = async (planId, updatedData, date) => {
+    try {
+      const planRef = doc(db, 'Plans', planId);
+      await updateDoc(planRef, updatedData);
+      const updatedItems = { ...items };
+      const itemIndex = updatedItems[date].findIndex(item => item.id === planId);
+      if (itemIndex > -1) {
+        updatedItems[date][itemIndex] = { ...updatedItems[date][itemIndex], ...updatedData };
+        setItems(updatedItems);
+        setPlanModalVisible(false);
+      }
+    } catch (error) {
+      console.error('Error updating plan:', error);
+    }
+  };
 
   return (
     <View style={{ flex: 1 }}>
@@ -179,98 +224,189 @@ const Schedule = () => {
         }}
         style={styles.modal}
       >
-        <View style={styles.modalBackground}>
-          <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <Text>Plan Adı:</Text>
-              <TextInput
-                style={styles.input}
-                onChangeText={(text) => setNewPlan(text)}
-                value={newPlan}
-              />
-              <Text>Plan Başlangıç Saati:</Text>
-              <TextInput
-                style={[styles.input, timeError && { borderColor: 'red' }]}
-                onChangeText={(text) => setStartTime(text)}
-                value={startTime}
-                placeholder="SS:DD"
-                keyboardType="numeric"
-              />
-              <Text style={{ color: 'red' }}>{timeError}</Text>
-              <Text>Plan Bitiş Saati:</Text>
-              <TextInput
-                style={[styles.input, timeError && { borderColor: 'red' }]}
-                onChangeText={(text) => setEndTime(text)}
-                value={endTime}
-                placeholder="SS:DD"
-                keyboardType="numeric"
-              />
-              <Text style={{ color: 'red' }}>{timeConflict}</Text>
-              <Text>Plan Açıklaması:</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Plan Açıklaması"
-                onChangeText={(text) => setPlanDescription(text)}
-                value={planDescription}
-              />
-              <Button
-                title="Planı Kaydet"
-                onPress={() => {
-                  addItem(selectedDate.toISOString().split('T')[0]);
+        <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
+          <View style={styles.modalBackground}>
+            <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
+              <View style={styles.modalContainer}>
+                <View style={styles.modalContent}>
+                  <Text>Plan Adı:</Text>
+                  <TextInput
+                    style={styles.input}
+                    onChangeText={(text) => setNewPlan(text)}
+                    value={newPlan}
+                  />
+                  <Text>Plan Başlangıç Saati:</Text>
+                  <TextInput
+                    style={[styles.input, timeError && { borderColor: 'red' }]}
+                    onChangeText={(text) => setStartTime(text)}
+                    value={startTime}
+                    placeholder="HH:MM veya HH.MM"
+                    keyboardType="numeric"
+                  />
+                  <Text style={{ color: 'red' }}>{timeError}</Text>
+                  <Text>Plan Bitiş Saati:</Text>
+                  <TextInput
+                    style={[styles.input, timeConflict && { borderColor: 'red' }]}
+                    onChangeText={(text) => setEndTime(text)}
+                    value={endTime}
+                    placeholder="HH:MM veya HH.MM"
+                    keyboardType="numeric"
+                  />
+                  <Text style={{ color: 'red' }}>{timeConflict}</Text>
+                  <Text>Plan Açıklaması:</Text>
+                  <TextInput
+                    style={styles.input}
+                    onChangeText={(text) => setPlanDescription(text)}
+                    value={planDescription}
+                  />
+                </View>
+                <Button title="Ekle" onPress={() => {
+                  addItem(timeToString(selectedDate));
                   setModalVisible(false);
-                }}
-              />
-            </View>
+                }} />
+              </View>
+            </TouchableWithoutFeedback>
           </View>
-        </View>
+        </TouchableWithoutFeedback>
       </Modal>
-      <ImageBackground source={require('../container/anasayfa.jpeg')} style={{ flex: 1, opacity: 0.5, zIndex: -1 }}>
+
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={settingsVisible}
+        onRequestClose={() => {
+          setSettingsVisible(!settingsVisible);
+        }}
+        style={styles.modal}
+      >
+        <TouchableWithoutFeedback onPress={() => setSettingsVisible(false)}>
+          <View style={styles.modalBackground}>
+            <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
+              <View style={styles.modalContainer}>
+                <Button title="Çıkış Yap" onPress={handleLogout} />
+                <Button title="Hesabı Sil" onPress={handleDeleteAccount} />
+                <Button title="Arka Planı Değiştir" onPress={handleChangeBackground} />
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={planModalVisible}
+        onRequestClose={() => {
+          setPlanModalVisible(!planModalVisible);
+        }}
+        style={styles.modal}
+      >
+        <TouchableWithoutFeedback onPress={() => setPlanModalVisible(false)}>
+          <View style={styles.modalBackground}>
+            <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
+              <View style={styles.modalContainer}>
+                <Text>Plan Adı: {selectedPlan?.name}</Text>
+                <Text>Başlangıç Saati: {selectedPlan?.startTime}</Text>
+                <Text>Bitiş Saati: {selectedPlan?.endTime}</Text>
+                <Text>Açıklama: {selectedPlan?.description}</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Plan Adı"
+                  value={selectedPlan?.name || ''}
+                  onChangeText={(text) => setSelectedPlan({ ...selectedPlan, name: text })}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Başlangıç Saati"
+                  value={selectedPlan?.startTime || ''}
+                  onChangeText={(text) => setSelectedPlan({ ...selectedPlan, startTime: text })}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Bitiş Saati"
+                  value={selectedPlan?.endTime || ''}
+                  onChangeText={(text) => setSelectedPlan({ ...selectedPlan, endTime: text })}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Açıklama"
+                  value={selectedPlan?.description || ''}
+                  onChangeText={(text) => setSelectedPlan({ ...selectedPlan, description: text })}
+                />
+                <Button title="Planı Güncelle" onPress={() => {
+                  const updatedData = {
+                    name: selectedPlan?.name,
+                    startTime: selectedPlan?.startTime,
+                    endTime: selectedPlan?.endTime,
+                    description: selectedPlan?.description,
+                  };
+                  handleUpdatePlan(selectedPlan.id, updatedData, timeToString(selectedDate));
+                }} />
+                <Button title="Planı Sil" onPress={() => handleDeletePlan(selectedPlan.id, timeToString(selectedDate))} />
+                <Button title="Kapat" onPress={() => setPlanModalVisible(false)} />
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
+      <ImageBackground source={backgroundImage} style={{ flex: 1 }}>
         <Agenda
           items={items}
           loadItemsForMonth={loadItemsForMonth}
           selected={selectedDate ? selectedDate.toISOString().split('T')[0] : null}
-          renderItem={(item) =>
-            <TouchableOpacity style={{ marginRight: 10, marginTop: 17 }}>
-              <Card>
+          renderItem={(item) => (
+            <TouchableOpacity onPress={() => {
+              setSelectedPlan(item);
+              setPlanModalVisible(true);
+            }}>
+              <Card style={{ marginRight: 10, marginTop: 17 }}>
                 <Card.Content>
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                    }}>
-                    <Text style={{ opacity: 1 }}>{item.name}</Text>
-                    <Text style={{ opacity: 1 }}>{item.startTime} - {item.endTime}</Text>
+                  <View>
+                    <Text>{item.name}</Text>
+                    <Text>{item.description}</Text>
+                    <Text>{item.startTime} - {item.endTime}</Text>
                   </View>
-                  <Text style={{ opacity: 1 }}>{item.description}</Text>
                 </Card.Content>
               </Card>
             </TouchableOpacity>
-          }
-          onDayPress={(day) => setSelectedDate(day.dateString)}
-          renderEmptyDate={() => <View />}
+          )}
+          onDayPress={(day) => setSelectedDate(new Date(day.timestamp))}
+          renderEmptyDate={() => (
+            <View style={styles.emptyDate}>
+              <Text>Bugün Planınız Yok :(</Text>
+            </View>
+          )}
           showClosingKnob={true}
         />
       </ImageBackground>
-      {noPlanMessage && (
-        <View style={styles.noPlanMessageContainer}>
-          <Text style={styles.noPlanMessage}>Seçtiğiniz tarihte bir planınız yok.</Text>
-          <Button
-            title="Plan Ekle"
-            onPress={() => setModalVisible(true)}
-          />
-        </View>
-      )}
+      <TouchableOpacity
+        style={styles.addButton}
+        onPress={() => setModalVisible(true)}
+      >
+        <Ionicons name="add-circle" size={80} color="#004d40" />
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.settingsButton}
+        onPress={() => setSettingsVisible(true)}
+      >
+        <Ionicons name="settings" size={40} color="#004d40" />
+      </TouchableOpacity>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
+  modal: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   modalBackground: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
   },
   modalContainer: {
     width: '80%',
@@ -280,32 +416,29 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   modalContent: {
-    marginBottom: 15,
+    marginBottom: 20,
   },
   input: {
     height: 40,
     borderColor: 'gray',
     borderWidth: 1,
     marginBottom: 10,
-    paddingLeft: 10,
+    paddingLeft: 8,
   },
-  noPlanMessageContainer: {
+  addButton: {
     position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    padding: 20,
+    bottom: 30,
+    right: 30,
   },
-  noPlanMessage: {
-    color: 'white',
-    fontSize: 16,
-    marginBottom: 10,
+  settingsButton: {
+    position: 'absolute',
+    bottom: 30,
+    left: 30,
   },
-  modal: {
-    margin: 0,
-    justifyContent: 'center',
+  emptyDate: {
+    height: 15,
+    flex: 1,
+    paddingTop: 30,
   },
 });
 

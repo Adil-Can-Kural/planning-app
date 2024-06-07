@@ -3,11 +3,11 @@ import {
   View,
   ScrollView,
   ImageBackground,
-  Text,
+  Alert,
 } from 'react-native';
 import { Input, Button as RNEButton } from 'react-native-elements';
 import firebase from '../firebaseConfig.js'; // Import your firebaseConfig.js
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail } from 'firebase/auth';
 
 const auth = getAuth(firebase);
 const MIN_PASSWORD_LENGTH = 6;
@@ -18,7 +18,7 @@ const AuthScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const [successMessage, setSuccessMessage] = useState(''); // State for success message
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -31,8 +31,9 @@ const AuthScreen = ({ navigation }) => {
     }
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      alert('Başarılı Bir Şekilde giriş yaptınız'); // Set success message
-      navigation.navigate('Plan'); // Navigate to Plan on successful login
+      Alert.alert('Success', 'Başarılı Bir Şekilde giriş yaptınız', [
+        { text: 'OK', onPress: () => navigation.navigate('Plan') }
+      ]);
     } catch (error) {
       console.error('Error logging in:', error);
       alert('Error logging in. Please try again.');
@@ -58,8 +59,23 @@ const AuthScreen = ({ navigation }) => {
     }
   };
 
+  const handleForgotPassword = async () => {
+    if (!email) {
+      alert('Please enter your email to reset your password.');
+      return;
+    }
+    try {
+      await sendPasswordResetEmail(auth, email);
+      alert('Password reset email sent. Please check your email.');
+    } catch (error) {
+      console.error('Error sending password reset email:', error);
+      alert('Error sending password reset email. Please try again.');
+    }
+  };
+
   const toggleAuthMode = () => {
     setIsLogin(!isLogin);
+    setIsForgotPassword(false); // Reset forgot password mode when toggling between login and register
   };
 
   return (
@@ -70,10 +86,26 @@ const AuthScreen = ({ navigation }) => {
           style={{ flex: 1, resizeMode: 'cover' }}
         >
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 500 }}>
-            {successMessage ? (
-              <Text style={{ color: 'green', fontSize: 20, marginBottom: 20 }}>{successMessage}</Text>
-            ) : null}
-            {isLogin ? (
+            {isForgotPassword ? (
+              <>
+                <Input
+                  placeholder="E-mail"
+                  onChangeText={(text) => setEmail(text)}
+                  value={email}
+                  style={{ backgroundColor: 'lightblue', color: 'black', fontSize: 16, borderColor: 'blue',marginTop: 10}}
+                />
+                <RNEButton
+                  title="Gönder"
+                  onPress={handleForgotPassword}
+                  buttonStyle={{ backgroundColor: 'red', marginTop: 10 }}
+                />
+                <RNEButton
+                  title="Giriş Yap"
+                  onPress={() => setIsForgotPassword(false)}
+                  buttonStyle={{ backgroundColor: '#000000', marginTop: 10 }}
+                />
+              </>
+            ) : isLogin ? (
               <>
                 <Input
                   placeholder="E-mail"
@@ -97,6 +129,11 @@ const AuthScreen = ({ navigation }) => {
                   title="Kayıt Ol"
                   onPress={toggleAuthMode}
                   buttonStyle={{ backgroundColor: '#000000', marginTop: 10 }}
+                />
+                <RNEButton
+                  title="Şifremi Unuttum"
+                  onPress={() => setIsForgotPassword(true)}
+                  buttonStyle={{ backgroundColor: 'red', marginTop: 10 }}
                 />
               </>
             ) : (
